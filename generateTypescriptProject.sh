@@ -54,19 +54,17 @@ function createBaseCdkProject {
 }
 
 function updateEntryPoint {
-    for file in "$(ls $workdir/bin/)"
-    do
-        eval "cat <<EOF
-$(<$home/templates/cdk.template)
+    rm $workdir/bin/*
+    eval "cat <<EOF
+$(<$home/templates/cdk.ts.template)
 EOF
-    " > "$workdir/bin/$file"
-    done
+    " > "$workdir/bin/cdk.ts"
 }
 
 function setupSrcDirectory {
     rm -r $workdir/lib
     mkdir $workdir/src
-    cp -r $home/templates/src_template/* $workdir/src/
+    cp -r $home/templates/src/* $workdir/src/
 }
 
 function runInstall {
