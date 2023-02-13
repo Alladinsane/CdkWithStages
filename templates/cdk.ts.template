@@ -7,7 +7,7 @@ import { App } from 'aws-cdk-lib';
 const app = new App();
 
 
-// Add all the stages (account+region pairs) that we have resources we want to deploy into.
+// Add all the stages (account+region pairs) to which we want to deploy
 // const example = new ExampleOuExampleUsEast1(app, 'exampleou-example-us-east-1', {})
 
 app.synth()
