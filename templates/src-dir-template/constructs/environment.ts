@@ -14,7 +14,7 @@ export interface EnvironmentProps {
     
 }
 
-export class AppEnvironment extends Construct {
+export class Environment extends Construct {
     // Input properties
     public readonly name: string;
 

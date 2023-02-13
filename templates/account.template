@@ -1,7 +1,7 @@
-import { Lazy, StageProps, Tags } from 'aws-cdk-lib';
+import { StageProps, Tags } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { ${ou^} } from '..';
-import { AppEnvironment } from '../../../constructs/environment';
+import { Environment } from '../../../constructs/environment';
 
 export interface ${ou^}${account^}Props extends StageProps {
     // Props 
@@ -17,8 +17,10 @@ export abstract class ${ou^}${account^} extends ${ou^} {
         super(scope, id, {
             ...props, env: { ...props.env, account: ${ou^}${account^}.AccountId },
             accountName: '${account}'
-        });
+        }); 
 
-        // Define AppEnvironments here
+        Tags.of(this).add('account', '${account}')
+
+        // Define Environments here
     }
 }

@@ -56,12 +56,6 @@ function setup {
     else
         config=$path
     fi
-
-    if [[ -z $config ]]; then
-        configfile="$home/config/default.json"
-    else
-        configfile=$config
-    fi
 }
 
 function createBaseCdkProject {
@@ -71,10 +65,11 @@ function createBaseCdkProject {
 }
 
 function updateEntryPoint {
+    entrypointName=$(jq .name $workdir/package.json --raw-output)
     rm $workdir/bin/*
     eval "cat <<EOF
 $(<$home/templates/cdk.ts.template)
-EOF" > "$workdir/bin/cdk.ts"
+EOF" > "$workdir/bin/$entrypointName.ts"
 }
 
 function setupSrcDirectory {
@@ -83,42 +78,64 @@ function setupSrcDirectory {
     cp -r $home/templates/src-dir-template/* $workdir/src/
 }
 
+function createRegionConfigFile {
+    echo "Generating config file for $region"
+    echo "as $workdir/src/configuration/regions/$region.ts..."
+
+    eval "cat <<-EOF
+$(<$home/templates/region-config.template)
+EOF" > "$workdir/src/configuration/regions/${region}.ts"
+    echo "Done."
+    echo " "
+}
+
 function createStage {
     if [ ! -d "$workdir/src/stages/$ou" ]; then
-            mkdir "$workdir/src/stages/$ou"
-            eval "cat <<-EOF
+        echo "Generating index for OU $ou at"
+        echo "$workdir/src/stages/$ou..."
+
+        mkdir "$workdir/src/stages/$ou"
+        eval "cat <<-EOF
 $(<$home/templates/ou.template)
 EOF" > "$workdir/src/stages/$ou/index.ts"
+
+        echo "Done."
+        echo " "
     fi
 
     if [ ! -d "$workdir/src/stages/$ou/$account" ]; then
+        echo "Generating index for account $account at "
+        echo "$workdir/src/stages/$ou/$account..."
+
         mkdir "$workdir/src/stages/$ou/$account"
-            eval "cat <<-EOF
+        eval "cat <<-EOF
 $(<$home/templates/account.template)
 EOF" > "$workdir/src/stages/$ou/$account/index.ts"
+
+        echo "Done."
+        echo " "
     fi
 
-    if [ ! -d "$ou/$account/$region" ]; then
+    if [ ! -d "$workdir/src/stages/$ou/$account/$region" ]; then
+        echo "Generating index for region $region at "
+        echo "$workdir/src/stages/$ou/$account/$region..."
+
         mkdir "$workdir/src/stages/$ou/$account/$region"
-            eval "cat <<-EOF
+        eval "cat <<-EOF
 $(<$home/templates/region.template)
 EOF" > "$workdir/src/stages/$ou/$account/$region/index.ts"
+
+        echo "Done."
+        echo " " 
+    fi
+
+    if [ ! -f "$workdir/src/configuration/regions/${region}.ts" ]; then
+        createRegionConfigFile
     fi
 }
 
-function createConfigIndex {
-    eval "cat <<-EOF
-$(<$home/templates/region-index.template)
-EOF" > "$workdir/src/configuration/regions/index.ts"
-}
-
-function createConfigFile {
-     eval "cat <<-EOF
-$(<$home/templates/region-config.template)
-EOF" > "$workdir/src/configuration/regions/${region}.ts"
-}
-
-function createRegionConfigs {
+function createRegionConfigIndex {
+    echo "Generating index file for $workdir/src/configuration/regions..."
     declare -a imports=()
     declare -a configs=()
     
@@ -127,34 +144,42 @@ function createRegionConfigs {
         importstatement="import { config as ${regionname}Config } from \"./$region\";"
         imports+=("$importstatement")
         config="['$region']: ${regionname}Config,"
-        #echo $config
         configs+=("$config")
-
-        createStage
-        createConfigFile
     done
 
-    createConfigIndex
+    eval "cat <<-EOF
+$(<$home/templates/region-index.template)
+EOF" > "$workdir/src/configuration/regions/index.ts"
+    echo "Done."
+    echo " "
 }
 
 function generateStages {
     all_regions=()
 
+    echo "Creating stages based on configuration from"
+    echo "$config:"
+    echo " "
     stages=$(jq .[] $config)
+    echo "$stages"
+    echo " "
+
     for ou in $(echo $stages | jq keys[] --raw-output); do
         for account in $(jq .[].$ou $config | jq keys[] --raw-output); do
             for region in $(jq .[].$ou.$account $config | jq .[] --raw-output); do
                 regionname=$(echo $region | sed -r 's/^(.)|-(.)/\U\1\U\2/g' )
                 all_regions+=($region)
+                createStage
             done
         done
     done
     
     regions=$(printf "%s\n" "${all_regions[@]}" | sort -u | tr '\n' ' ')
-    createRegionConfigs
+    createRegionConfigIndex
 }
 
 function runInstall {
+    echo "Installing libraries..."
     cd $workdir
     npm install
 }
@@ -174,4 +199,6 @@ generateStages
 
 runInstall
 
+echo " "
+echo "Project $name is ready!"
 
