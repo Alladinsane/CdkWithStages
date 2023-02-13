@@ -43,12 +43,6 @@ else
   root=$path
 fi
 
-if [[ -z $config ]]; then
-  config="$home/config/example.json"
-else
-  config=$path
-fi
-
 ##
 # Functions
 ##
@@ -56,6 +50,12 @@ function setup {
     home=$(pwd)
     workdir="$root/$name"
     mkdir $workdir
+
+    if [[ -z $config ]]; then
+        config="$home/config/example.json"
+    else
+        config=$path
+    fi
 
     if [[ -z $config ]]; then
         configfile="$home/config/default.json"
@@ -130,6 +130,7 @@ function createRegionConfigs {
         #echo $config
         configs+=("$config")
 
+        createStage
         createConfigFile
     done
 
@@ -139,22 +140,16 @@ function createRegionConfigs {
 function generateStages {
     all_regions=()
 
-    for LINE in $(cat "$config"); do
-        STRING=$(echo $LINE | tr -d '\n')
-        if [[ "$STRING" =~ "^(#)||(\/\/).*" ]]; then
-            # Skip commented lines
-            continue
-        fi
-        readarray -d / -t namespace <<< "$STRING"
-        ou=${namespace[0]}
-        account=${namespace[1]}
-        region=$(echo ${namespace[2]} | tr -d '\n')
-        regionname=$(echo $region | sed -r 's/^(.)|-(.)/\U\1\U\2/g' )
-        createStage
-        declare -A regionObj
-        
-        all_regions+=($region)
+    stages=$(jq .[] $config)
+    for ou in $(echo $stages | jq keys[] --raw-output); do
+        for account in $(jq .[].$ou $config | jq keys[] --raw-output); do
+            for region in $(jq .[].$ou.$account $config | jq .[] --raw-output); do
+                regionname=$(echo $region | sed -r 's/^(.)|-(.)/\U\1\U\2/g' )
+                all_regions+=($region)
+            done
+        done
     done
+    
     regions=$(printf "%s\n" "${all_regions[@]}" | sort -u | tr '\n' ' ')
     createRegionConfigs
 }
