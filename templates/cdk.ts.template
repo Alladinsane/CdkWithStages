@@ -7,7 +7,7 @@ import { App } from 'aws-cdk-lib';
 const app = new App();
 
 
-// Add all the stages (account+region pairs) to which we want to deploy
-const example = new ExampleDevUsEast1(app, 'example-dev-us-east-1', {})
+// Add all the stages (account+region pairs) to which we want to deploy stacks
+// const example = new ExampleDevUsEast1(app, 'example-dev-us-east-1', {})
 
 app.synth()

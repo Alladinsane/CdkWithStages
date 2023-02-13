@@ -26,7 +26,7 @@ export class Environment extends Construct {
         
         Tags.of(this).add('environment', this.name)
 
-        // Stacks that make up the environment
+        // Stacks that make up an environment
     }
     
 }
