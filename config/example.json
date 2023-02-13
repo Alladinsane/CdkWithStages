@@ -1,0 +1,12 @@
+/*
+# Example configuration file
+# Copy or create your own, and 
+# run cdk-stage with the --config option
+#
+# One stage per line
+#
+# ou/account/region 
+example/dev/us-east-1
+example/stage/us-east-1
+example/prod/us-east-1
+example/dev/us-east-2

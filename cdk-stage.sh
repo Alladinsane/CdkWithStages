@@ -43,6 +43,12 @@ else
   root=$path
 fi
 
+if [[ -z $config ]]; then
+  config="$home/config/example.json"
+else
+  config=$path
+fi
+
 ##
 # Functions
 ##
@@ -74,7 +80,7 @@ EOF" > "$workdir/bin/cdk.ts"
 function setupSrcDirectory {
     rm -r $workdir/lib
     mkdir $workdir/src
-    cp -r $home/templates/src/* $workdir/src/
+    cp -r $home/templates/src-dir-template/* $workdir/src/
 }
 
 function createStage {
@@ -100,6 +106,18 @@ EOF" > "$workdir/src/stages/$ou/$account/$region/index.ts"
     fi
 }
 
+function createConfigIndex {
+    eval "cat <<-EOF
+$(<$home/templates/region-index.template)
+EOF" > "$workdir/src/configuration/regions/index.ts"
+}
+
+function createConfigFile {
+     eval "cat <<-EOF
+$(<$home/templates/region-config.template)
+EOF" > "$workdir/src/configuration/regions/${region}.ts"
+}
+
 function createRegionConfigs {
     declare -a imports=()
     declare -a configs=()
@@ -111,40 +129,33 @@ function createRegionConfigs {
         config="['$region']: ${regionname}Config,"
         #echo $config
         configs+=("$config")
-        echo ${imports[*]}
+
+        createConfigFile
     done
 
-    createConfigFiles
+    createConfigIndex
 }
-
-function createConfigFiles {
-    eval "cat <<-EOF
-$(<$home/templates/region-index.template)
-EOF" > "$workdir/src/configuration/regions/index.ts"
-
-    eval "cat <<-EOF
-$(<$home/templates/region-config.template)
-EOF" > "$workdir/src/configuration/regions/${region}.ts"
-}
-
 
 function generateStages {
     all_regions=()
 
-    for LINE in $(cat './config/stages.json'); do
+    for LINE in $(cat "$config"); do
         STRING=$(echo $LINE | tr -d '\n')
+        if [[ "$STRING" =~ "^(#)||(\/\/).*" ]]; then
+            # Skip commented lines
+            continue
+        fi
         readarray -d / -t namespace <<< "$STRING"
         ou=${namespace[0]}
         account=${namespace[1]}
         region=$(echo ${namespace[2]} | tr -d '\n')
         regionname=$(echo $region | sed -r 's/^(.)|-(.)/\U\1\U\2/g' )
-        # createStage
+        createStage
         declare -A regionObj
         
         all_regions+=($region)
     done
     regions=$(printf "%s\n" "${all_regions[@]}" | sort -u | tr '\n' ' ')
-    echo ${regions[*]}
     createRegionConfigs
 }
 
