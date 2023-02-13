@@ -1,5 +1,5 @@
 # Cdk-Stage
-Language=Typescript
+Typescript
 ## Summary
 Rapidly deploys a cdk project that implements stages, an environment construct, and regional configurations. This follows a pattern suitable for managing multi-account deployments for users that already utilize AWS Organizations. It utilizes stack inheritance to limit code duplication and centralize configuration of each stage.
 
